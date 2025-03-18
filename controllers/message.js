@@ -7,6 +7,10 @@ export const getMessages = async (req, res) => {
   const { page, limit = 15 } = req.query;
   const { senderId, receiverId } = req.params;
 
+  if (req.user.id !== senderId && req.user.id !== receiverId) {
+    return res.status(403).json({ message: "Forbidden!" });
+  }
+
   try {
     const messages = await Message.find({
       $or: [
@@ -37,9 +41,16 @@ const compressImage = async (buffer) => {
 };
 
 export const sendMessage = async (req, res) => {
-  const { senderId, receiverId } = req.params;
+  const senderId = req.user.id;
+  const { receiverId } = req.params;
 
   let picturePath = null;
+
+  if (!senderId) {
+    return res.status(401).json({ message: "Unauthorized!" });
+  }
+
+  
 
   if (req.file) {
     try {

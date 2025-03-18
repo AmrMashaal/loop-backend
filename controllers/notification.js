@@ -4,6 +4,10 @@ export const getNotification = async (req, res) => {
   const { id } = req.params;
   const { limit = 5, page } = req.query;
 
+  if (id !== req.user.id) {
+    return res.status(403).json({ message: "You are not authorized" });
+  }
+
   try {
     const notifications = await Notification.find({ receiverId: id })
       .limit(limit)

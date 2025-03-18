@@ -11,7 +11,6 @@ const userSchema = new mongoose.Schema(
     picturePath: { type: String, default: "" },
     background: { type: String, default: "" },
     bio: { type: String, default: "" },
-    friendsRequest: { type: Array, default: [] },
     verified: { type: Boolean, default: false },
     online: { type: Boolean, default: false },
     chatHistory: { type: Map, of: Object, default: {} },

@@ -36,144 +36,144 @@ export const editUser = async (req, res) => {
   let background = null;
   const { id, usernameParam } = req.params;
 
-  if (req.user.id === id.toString()) {
-    if (req.file) {
-      if (req.body.picturePath && !req.body.background) {
-        try {
-          const uniqueImageName = `${uuidv4()}-${req.file.originalname}`;
+  if (req.user.id !== id.toString()) {
+    return res.status(403).json({ message: "Forbidden!" });
+  }
 
-          const compressedBuffer = await compressImage(req.file.buffer);
+  if (req.file) {
+    if (req.body.picturePath && !req.body.background) {
+      try {
+        const uniqueImageName = `${uuidv4()}-${req.file.originalname}`;
 
-          const result = await new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-              {
-                resource_type: "image",
-                public_id: uniqueImageName,
-                folder: "posts",
-              },
-              (error, result) => {
-                if (error) reject(error);
-                else resolve(result);
-              }
-            );
-            uploadStream.end(compressedBuffer);
-          });
+        const compressedBuffer = await compressImage(req.file.buffer);
 
-          picturePath = result.secure_url;
-        } catch (err) {
-          res.status(500).json({ message: err.message });
-        }
-      } else if (req.body.background && !req.body.picturePath) {
-        try {
-          const uniqueImageName = `${uuidv4()}-${req.file.originalname}`;
+        const result = await new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              resource_type: "image",
+              public_id: uniqueImageName,
+              folder: "posts",
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+          uploadStream.end(compressedBuffer);
+        });
 
-          const compressedBuffer = await compressImage(req.file.buffer);
+        picturePath = result.secure_url;
+      } catch (err) {
+        res.status(500).json({ message: err.message });
+      }
+    } else if (req.body.background && !req.body.picturePath) {
+      try {
+        const uniqueImageName = `${uuidv4()}-${req.file.originalname}`;
 
-          const result = await new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-              {
-                resource_type: "image",
-                public_id: uniqueImageName,
-                folder: "posts",
-              },
-              (error, result) => {
-                if (error) reject(error);
-                else resolve(result);
-              }
-            );
-            uploadStream.end(compressedBuffer);
-          });
+        const compressedBuffer = await compressImage(req.file.buffer);
 
-          background = result.secure_url;
-        } catch (err) {
-          res.status(500).json({ message: err.message });
-        }
+        const result = await new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              resource_type: "image",
+              public_id: uniqueImageName,
+              folder: "posts",
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+          uploadStream.end(compressedBuffer);
+        });
+
+        background = result.secure_url;
+      } catch (err) {
+        res.status(500).json({ message: err.message });
       }
     }
+  }
 
-    try {
-      const {
-        firstName,
-        lastName,
-        username,
-        birthdate,
-        gender,
-        bio,
-        location,
-        occupation,
-        facebook,
-        instagram,
-        linkedin,
-        x,
-        youtube,
-      } = req.body;
+  try {
+    const {
+      firstName,
+      lastName,
+      username,
+      birthdate,
+      gender,
+      bio,
+      location,
+      occupation,
+      facebook,
+      instagram,
+      linkedin,
+      x,
+      youtube,
+    } = req.body;
 
-      const user = await User.findById(id);
-      const isUserName = await User.findOne({ username });
+    const user = await User.findById(id);
+    const isUserName = await User.findOne({ username });
 
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-      if (isUserName && isUserName._id.toString() !== id) {
-        return res.status(404).json({ message: "Username exists" });
-      }
+    if (isUserName && isUserName._id.toString() !== id) {
+      return res.status(404).json({ message: "Username exists" });
+    }
 
-      user.firstName = firstName;
-      user.lastName = lastName;
-      user.birthdate = birthdate;
-      user.gender = gender;
-      user.bio = bio;
-      user.location = location;
-      user.occupation = occupation;
-      user.links.facebook = facebook;
-      user.links.instagram = instagram;
-      user.links.linkedin = linkedin;
-      user.links.x = x;
-      user.links.youtube = youtube;
-      if (usernameParam !== username) {
-        user.username = username;
-      } else if (background) {
-        user.background = background;
-      } else if (picturePath) {
-        user.picturePath = picturePath;
-      }
+    user.firstName = firstName;
+    user.lastName = lastName;
+    user.birthdate = birthdate;
+    user.gender = gender;
+    user.bio = bio;
+    user.location = location;
+    user.occupation = occupation;
+    user.links.facebook = facebook;
+    user.links.instagram = instagram;
+    user.links.linkedin = linkedin;
+    user.links.x = x;
+    user.links.youtube = youtube;
+    if (usernameParam !== username) {
+      user.username = username;
+    } else if (background) {
+      user.background = background;
+    } else if (picturePath) {
+      user.picturePath = picturePath;
+    }
 
-      if (picturePath) {
-        await Post.updateMany(
-          {
-            userId: id,
-          },
-          {
-            $set: {
-              userPicturePath: picturePath,
-            },
-          }
-        );
-      }
-
+    if (picturePath) {
       await Post.updateMany(
         {
           userId: id,
         },
         {
           $set: {
-            firstName: firstName,
-            lastName: lastName,
+            userPicturePath: picturePath,
           },
         }
       );
-
-      const updatedUser = await user.save();
-
-      const { password, ...UserData } = updateduser.toObject();
-
-      res.status(200).json(UserData);
-    } catch (err) {
-      res.status(404).json({ message: err.message });
     }
-  } else {
-    res.status(403).json({ message: "Forbidden!" });
+
+    await Post.updateMany(
+      {
+        userId: id,
+      },
+      {
+        $set: {
+          firstName: firstName,
+          lastName: lastName,
+        },
+      }
+    );
+
+    const updatedUser = await user.save();
+
+    const { password, ...UserData } = updateduser.toObject();
+
+    res.status(200).json(UserData);
+  } catch (err) {
+    res.status(404).json({ message: err.message });
   }
 };
 
@@ -182,39 +182,36 @@ export const editUser = async (req, res) => {
 export const changePassword = async (req, res) => {
   const { id } = req.params;
 
-  if (req.user.id === id.toString()) {
-    try {
-      const user = await User.findById(id);
+  if (req.user.id !== id.toString()) {
+    return res.status(403).json({ message: "Forbidden!" });
+  }
 
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
+  try {
+    const user = await User.findById(id);
 
-      const salt = await bcrypt.genSalt(10);
-      const isCorrect = await bcrypt.compare(
-        req.body.oldPassword,
-        user.password
-      );
-
-      if (!isCorrect) {
-        return res.status(400).json({ message: "Wrong password" });
-      }
-
-      const hashedPassword = await bcrypt.hash(req.body.newPassword, salt);
-
-      user.password = hashedPassword;
-      user.passwordChangedAt = new Date();
-
-      await user.save();
-
-      res
-        .status(200)
-        .json({ message: "The password has been changed successfully" });
-    } catch (err) {
-      res.status(404).json({ message: err.message });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
-  } else {
-    res.status(403).json({ message: "Forbidden!" });
+
+    const salt = await bcrypt.genSalt(10);
+    const isCorrect = await bcrypt.compare(req.body.oldPassword, user.password);
+
+    if (!isCorrect) {
+      return res.status(400).json({ message: "Wrong password" });
+    }
+
+    const hashedPassword = await bcrypt.hash(req.body.newPassword, salt);
+
+    user.password = hashedPassword;
+    user.passwordChangedAt = new Date();
+
+    await user.save();
+
+    res
+      .status(200)
+      .json({ message: "The password has been changed successfully" });
+  } catch (err) {
+    res.status(404).json({ message: err.message });
   }
 };
 
@@ -223,24 +220,24 @@ export const changePassword = async (req, res) => {
 export const checkCorrectPassword = async (req, res) => {
   const { id } = req.params;
 
-  if (req.user.id === id.toString()) {
-    try {
-      const user = await User.findById(id);
+  if (req.user.id !== id.toString()) {
+    return res.status(403).json({ message: "Forbidden!" });
+  }
 
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
+  try {
+    const user = await User.findById(id);
 
-      if (user.passwordChangedAt !== req.body.passwordChangedAt) {
-        return res.status(404).json({ message: "Password is not correct" });
-      }
-
-      res.status(200).json({ message: "Correct password" });
-    } catch (err) {
-      res.status(404).json({ message: err.message });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
-  } else {
-    res.status(403).json({ message: "Forbidden!" });
+
+    if (user.passwordChangedAt !== req.body.passwordChangedAt) {
+      return res.status(404).json({ message: "Password is not correct" });
+    }
+
+    res.status(200).json({ message: "Correct password" });
+  } catch (err) {
+    res.status(404).json({ message: err.message });
   }
 };
 
@@ -248,6 +245,10 @@ export const checkCorrectPassword = async (req, res) => {
 
 export const getOnlineFriends = async (req, res) => {
   const { id } = req.params;
+
+  if (req.user.id !== id.toString()) {
+    return res.status(403).json({ message: "Forbidden!" });
+  }
 
   try {
     const friends = await Friend.find({
@@ -292,7 +293,7 @@ export const changeOnlineStatus = async (req, res) => {
       user.online = false;
     }
 
-    const updatedUser = await user.save();
+    await user.save();
 
     res
       .status(200)

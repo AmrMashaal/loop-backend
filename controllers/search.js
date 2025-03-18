@@ -41,6 +41,7 @@ export const searchInfo = async (req, res) => {
     } else if (type === "posts") {
       const posts = await Post.find({
         description: { $regex: info, $options: "i" },
+        privacy: "public",
       })
         .limit(5)
         .skip((page - 1) * 5)
@@ -48,6 +49,7 @@ export const searchInfo = async (req, res) => {
 
       const count = await Post.countDocuments({
         description: { $regex: info, $options: "i" },
+        privacy: "public",
       });
 
       const postsWithIsLiked = await Promise.all(

@@ -4,6 +4,8 @@ import User from "../models/User.js";
 import sharp from "sharp";
 import { v4 as uuidv4 } from "uuid";
 import cloudinary from "../utils/cloudinary.js";
+import fs from "fs";
+import path from "path";
 
 const compressImage = async (buffer) => {
   return await sharp(buffer)
@@ -11,6 +13,10 @@ const compressImage = async (buffer) => {
     .jpeg({ quality: 80 })
     .toBuffer();
 };
+
+const PRIVATE_KEY = process.env.JWT_PRIVATE_KEY.replace(/\\n/g, "\n");
+
+console.log(PRIVATE_KEY);
 
 export const register = async (req, res) => {
   let picturePath = null;
@@ -55,9 +61,7 @@ export const register = async (req, res) => {
     const isUsernameExisted = await User.findOne({ username });
 
     if (isUsernameExisted) {
-      return res
-        .status(400)
-        .json({ message: "This Username Is Already Existed" });
+      return res.status(400).json({ message: "This Username Already Exists" });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -68,7 +72,9 @@ export const register = async (req, res) => {
       lastName,
       username,
       password: passwordHash,
-      picturePath,
+      picturePath:
+        picturePath ||
+        "https://res.cloudinary.com/dc3ta1xrf/image/upload/v1741039254/posts/feb4142e-fff3-4a0f-a2bd-d89bd563543c-loading-user.png.jpg",
       friends,
       occupation,
       location,
@@ -87,20 +93,22 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   const { username, password } = req.body;
 
+  if (!username || !password) {
+    return res.status(400).json({ message: "Please fill in all fields." });
+  }
+
   try {
     const user = await User.findOne({ username });
 
     const realPassword = await bcrypt.compare(password, user.password);
 
-    if (!user) {
-      return res.status(404).json({ message: "User does not exist." });
+    if ((!realPassword && user) || user === null) {
+      return res.status(400).json({ message: "Invalid user or password." });
     }
 
-    if (!realPassword && user) {
-      return res.status(400).json({ message: "Wrong password." });
-    }
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+    const token = jwt.sign({ id: user._id }, PRIVATE_KEY, {
+      algorithm: "RS256",
+    });
 
     delete user.password;
 

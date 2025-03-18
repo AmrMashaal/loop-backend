@@ -7,12 +7,19 @@ import {
   deleteReply,
   editReply,
 } from "../controllers/reply.js";
+import { replyLimiter } from "../middleware/limiter.js";
 
 const router = express.Router();
 
 router.get("/:commentId", verifyToken, getReplies);
 
-router.post("/:commentId", verifyToken, upload.single("picture"), postReply);
+router.post(
+  "/:commentId",
+  verifyToken,
+  replyLimiter,
+  upload.single("picture"),
+  postReply
+);
 
 router.patch("/:replyId/edit", verifyToken, editReply);
 

@@ -2,11 +2,16 @@ import Like from "../models/Like.js";
 import Post from "../models/Post.js";
 import Comment from "../models/Comment.js";
 import Reply from "../models/Reply.js";
+import Repost from "../models/Repost.js";
 
 export const likePost = async (req, res) => {
   const { id, userId } = req.params;
 
   let newPost;
+
+  if (req.user.id !== userId.toString()) {
+    return res.status(403).json({ message: "Forbidden!" });
+  }
 
   try {
     const like = await Like.findOne({ userId, postId: id });
@@ -44,6 +49,10 @@ export const likeComment = async (req, res) => {
 
   let newComment;
 
+  if (req.user.id !== userId.toString()) {
+    return res.status(403).json({ message: "Forbidden!" });
+  }
+
   try {
     const like = await Like.findOne({ userId, commentId: id });
 
@@ -79,6 +88,10 @@ export const likeReply = async (req, res) => {
   const { id, userId } = req.params;
 
   let newReply;
+
+  if (req.user.id !== userId.toString()) {
+    return res.status(403).json({ message: "Forbidden!" });
+  }
 
   try {
     const like = await Like.findOne({ userId, replyId: id });
@@ -160,6 +173,88 @@ export const whoLikedReply = async (req, res) => {
       .select("userId");
 
     const count = await Like.countDocuments({ replyId });
+
+    res.status(200).json({ likes, count });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+// ---------------------------------------------------------
+export const likeRepost = async (req, res) => {
+  const { id, userId } = req.params;
+
+  let newRepost;
+
+  if (req.user.id !== userId.toString()) {
+    return res.status(403).json({ message: "Forbidden!" });
+  }
+
+  try {
+    const like = await Like.findOne({ userId, repostId: id });
+
+    if (like) {
+      await Like.deleteOne({ userId, repostId: id });
+
+      const post = await Repost.findByIdAndUpdate(
+        id,
+        { $inc: { likesCount: -1 } },
+        { new: true }
+      )
+        .populate(
+          "postId",
+          "_id userId description picturePath firstName lastName userPicturePath location verified textAddition privacy createdAt"
+        )
+        .populate("userId", "firstName lastName picturePath verified _id");
+
+      const postId =
+        typeof post.userId === "object" &&
+        post?.postId?.privacy &&
+        post?.postId?.privacy === "private"
+          ? null
+          : post.postId;
+
+      newRepost = { ...post._doc, isLiked: false, postId };
+    } else {
+      await new Like({ userId, repostId: id }).save();
+
+      const post = await Repost.findByIdAndUpdate(
+        id,
+        { $inc: { likesCount: 1 } },
+        { new: true }
+      )
+        .populate(
+          "postId",
+          "_id userId description picturePath firstName lastName userPicturePath location verified textAddition privacy createdAt"
+        )
+        .populate("userId", "firstName lastName picturePath verified _id");
+
+      const postId =
+        typeof post.userId === "object" &&
+        post?.postId?.privacy &&
+        post?.postId?.privacy === "private"
+          ? null
+          : post.postId;
+
+      newRepost = { ...post._doc, isLiked: true, postId };
+    }
+
+    res.status(200).json({ post: newRepost, isLiked: !like });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+// ---------------------------------------------------------
+export const whoLikedRepost = async (req, res) => {
+  const { page } = req.query;
+  const { repostId } = req.params;
+
+  try {
+    const likes = await Like.find({ repostId })
+      .limit(10)
+      .skip((page - 1) * 10)
+      .populate("userId", "firstName lastName picturePath verified _id");
+
+    const count = await Like.countDocuments({ repostId });
 
     res.status(200).json({ likes, count });
   } catch (error) {

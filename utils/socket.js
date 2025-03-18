@@ -32,7 +32,9 @@ export const initSocket = (io) => {
     // --------------------------------------------------------
 
     socket.on("newPost", async (data) => {
-      io.emit("notification", data);
+      for (const friend in data.friends) {
+        socket.to(onlineUsers[data.friends[friend]]).emit("notification", data.post);
+      }
     });
 
     // --------------------------------------------------------

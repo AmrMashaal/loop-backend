@@ -25,7 +25,7 @@ export const getLastMessages = async (req, res) => {
 
 export const postLastMessage = async (req, res) => {
   try {
-    const check = await LastMessage.findOneAndUpdate(
+    await LastMessage.findOneAndUpdate(
       {
         $or: [
           { senderId: req.body.senderId, receiverId: req.body.receiverId },
