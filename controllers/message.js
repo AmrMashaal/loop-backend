@@ -35,8 +35,10 @@ export const getMessages = async (req, res) => {
 
 const compressImage = async (buffer) => {
   return await sharp(buffer)
+    .rotate()
     .resize({ width: 800 })
     .jpeg({ quality: 80 })
+    .withMetadata()
     .toBuffer();
 };
 
@@ -49,8 +51,6 @@ export const sendMessage = async (req, res) => {
   if (!senderId) {
     return res.status(401).json({ message: "Unauthorized!" });
   }
-
-  
 
   if (req.file) {
     try {

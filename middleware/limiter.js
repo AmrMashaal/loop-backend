@@ -13,7 +13,7 @@ export const messageLimiter = rateLimit({
 });
 
 export const postLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
+  windowMs: 30 * 1000, // 30 seconds
   max: 5,
   message: "Too many posts. Please wait.",
 });

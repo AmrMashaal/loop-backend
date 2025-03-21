@@ -8,6 +8,7 @@ import mongoose from "mongoose";
 import Post from "../models/Post.js";
 import Reply from "../models/Reply.js";
 import Repost from "../models/Repost.js";
+import Badge from "../models/Badge.js";
 
 export const getComments = async (req, res) => {
   const { postId, commentId } = req.params;
@@ -89,8 +90,10 @@ export const getComments = async (req, res) => {
 
 const compressImage = async (buffer) => {
   return await sharp(buffer)
+    .rotate()
     .resize({ width: 800 })
     .jpeg({ quality: 80 })
+    .withMetadata()
     .toBuffer();
 };
 
@@ -143,6 +146,120 @@ export const postCommentOriginal = async (req, res) => {
       "user",
       "_id verified firstName lastName picturePath"
     );
+
+    const commentCount = await Comment.countDocuments({ user: req.user.id });
+
+    const isBadge = await Badge.findOne({
+      userId: req.user.id,
+      type: "comment",
+    });
+
+    if (!isBadge || commentCount === 5) {
+      const badge = new Badge({
+        userId: req.user.id,
+        type: "comment",
+        level: "bronze",
+        name: "First Words",
+        description: "User has shared 5 comments",
+        icon: "🍼",
+        criteria: "User must share 5 comments",
+      });
+
+      await badge.save();
+
+      const notification = new Notification({
+        receiverId: req.user.id,
+        type: "badge",
+        linkId: `/profile/${userId}/badges`,
+        description: "You have earned a new badge - First Words",
+      });
+
+      await notification.save();
+    } else if (commentCount === 10) {
+      await Badge.findOneAndUpdate(
+        { userId: req.user.id, type: "comment" },
+        {
+          level: "silver",
+          name: "Echo Starter",
+          description: "User has shared 10 comments",
+          icon: "🎤",
+          criteria: "User must share 10 comments",
+        },
+        { upsert: true }
+      );
+
+      const notification = new Notification({
+        receiverId: req.user.id,
+        type: "badge",
+        linkId: `/profile/${userId}/badges`,
+        description: "You have earned a new badge - Echo Starter",
+      });
+
+      await notification.save();
+    } else if (commentCount === 25) {
+      await Badge.findOneAndUpdate(
+        { userId: req.user.id, type: "comment" },
+        {
+          level: "gold",
+          name: "Comment Raptor",
+          description: "User has shared 25 comments",
+          icon: "🦖",
+          criteria: "User must share 25 comments",
+        },
+        { upsert: true }
+      );
+
+      const notification = new Notification({
+        receiverId: req.user.id,
+        type: "badge",
+        linkId: `/profile/${userId}/badges`,
+        description: "You have earned a new badge - Comment Raptor",
+      });
+
+      await notification.save();
+    } else if (commentCount === 50) {
+      await Badge.findOneAndUpdate(
+        { userId: req.user.id, type: "comment" },
+        {
+          level: "diamond",
+          name: "Debate Champion",
+          description: "User has shared 50 comments",
+          icon: "⚖️",
+          criteria: "User must share 50 comments",
+        },
+        { upsert: true }
+      );
+
+      const notification = new Notification({
+        receiverId: req.user.id,
+        type: "badge",
+        linkId: `/profile/${userId}/badges`,
+        description: "You have earned a new badge - Debate Champion",
+      });
+
+      await notification.save();
+    } else if (commentCount === 250) {
+      await Badge.findOneAndUpdate(
+        { userId: req.user.id, type: "comment" },
+        {
+          level: "platinum",
+          name: "Master of Comments",
+          description: "User has shared 250 comments",
+          icon: "👑",
+          criteria: "User must share 250 comments",
+        },
+        { upsert: true }
+      );
+
+      const notification = new Notification({
+        receiverId: req.user.id,
+        type: "badge",
+        linkId: `/profile/${userId}/badges`,
+        description: "You have earned a new badge - Master of Comments",
+      });
+
+      await notification.save();
+    }
 
     res.status(200).json(comment);
   } catch (err) {
@@ -232,7 +349,7 @@ export const pinComment = async (req, res) => {
 
     if (req.user.id !== comment.user.toString()) {
       return res.status(403).json({ message: "Forbidden!" });
-    }  
+    }
 
     if (!comment) {
       return res.status(404).json({ message: "comment is not found" });

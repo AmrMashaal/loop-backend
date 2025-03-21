@@ -26,8 +26,10 @@ export const getUser = async (req, res) => {
 
 const compressImage = async (buffer) => {
   return await sharp(buffer)
-    .resize({ width: 1200 })
-    .jpeg({ quality: 90 })
+    .rotate()
+    .resize({ width: 800 })
+    .jpeg({ quality: 80 })
+    .withMetadata()
     .toBuffer();
 };
 

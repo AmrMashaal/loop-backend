@@ -8,7 +8,7 @@ import {
   whoLikedReply,
   likeRepost,
   whoLikedRepost,
-} from "../controllers/likes.js";
+} from "../controllers/like.js";
 import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();

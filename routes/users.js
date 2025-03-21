@@ -6,7 +6,7 @@ import {
   getOnlineFriends,
   changeOnlineStatus,
   editUser,
-} from "../controllers/users.js";
+} from "../controllers/user.js";
 import { verifyToken } from "../middleware/auth.js";
 import { upload } from "../config/multer.js";
 

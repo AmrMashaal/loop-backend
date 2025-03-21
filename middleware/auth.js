@@ -1,7 +1,5 @@
 import jwt from "jsonwebtoken";
 
-const PUBLIC_KEY = process.env.JWT_PUBLIC_KEY.replace(/\\n/g, "\n");
-
 export const verifyToken = async (req, res, next) => {
   try {
     let token = req.header("Authorization");
@@ -14,7 +12,7 @@ export const verifyToken = async (req, res, next) => {
       if (!token) return res.status(403).json({ message: "not authorized" });
     }
 
-    const verified = jwt.verify(token, PUBLIC_KEY, { algorithms: ["RS256"] });
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
     req.user = verified;
     next();
   } catch (err) {

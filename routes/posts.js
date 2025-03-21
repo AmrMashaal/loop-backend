@@ -10,7 +10,7 @@ import {
   createPost,
   getPostClickInfo,
   changePrivacy,
-} from "../controllers/posts.js";
+} from "../controllers/post.js";
 import { upload } from "../config/multer.js";
 import { postLimiter } from "../middleware/limiter.js";
 

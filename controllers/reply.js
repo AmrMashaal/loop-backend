@@ -8,8 +8,10 @@ import Repost from "../models/Repost.js";
 
 const compressImage = async (buffer) => {
   return await sharp(buffer)
+    .rotate()
     .resize({ width: 800 })
     .jpeg({ quality: 80 })
+    .withMetadata()
     .toBuffer();
 };
 

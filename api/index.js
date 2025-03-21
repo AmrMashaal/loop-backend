@@ -14,9 +14,10 @@ import searchRoutes from "../routes/search.js";
 import notificationRoutes from "../routes/notifications.js";
 import likeRoutes from "../routes/likes.js";
 import friendRoutes from "../routes/friends.js";
-import replyRoutes from "../routes/reply.js";
-import lastMessageRoutes from "../routes/lastMessage.js";
+import replyRoutes from "../routes/replies.js";
+import lastMessageRoutes from "../routes/lastMessages.js";
 import repostRoutes from "../routes/reposts.js";
+import badgeRoutes from "../routes/badges.js";
 
 dotenv.config();
 
@@ -54,5 +55,6 @@ app.use("/friends", friendRoutes);
 app.use("/replies", replyRoutes);
 app.use("/lastMessages", lastMessageRoutes);
 app.use("/reposts", repostRoutes);
+app.use("/badges", badgeRoutes);
 
 export default app;

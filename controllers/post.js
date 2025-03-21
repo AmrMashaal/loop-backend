@@ -5,14 +5,17 @@ import User from "../models/User.js";
 import Comment from "../models/Comment.js";
 import Like from "../models/Like.js";
 import Friend from "../models/Friend.js";
-import Notification from "../models/notification.js";
 import cloudinary from "../utils/cloudinary.js";
 import Repost from "../models/Repost.js";
+import Badge from "../models/Badge.js";
+import Notification from "../models/notification.js";
 
 const compressImage = async (buffer) => {
   return await sharp(buffer)
+    .rotate()
     .resize({ width: 800 })
     .jpeg({ quality: 80 })
+    .withMetadata()
     .toBuffer();
 };
 
@@ -42,7 +45,11 @@ export const createPost = async (req, res) => {
 
       picturePath = result.secure_url;
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      if (picturePath) {
+        await cloudinary.uploader.destroy(uniqueImageName);
+      }
+
+      return res.status(500).json({ message: error.message });
     }
   }
 
@@ -52,7 +59,7 @@ export const createPost = async (req, res) => {
     if (userId !== req.user.id) {
       return res.status(403).json({ message: "Forbidden!" });
     }
-    
+
     const user = await User.findById(userId);
 
     const newPost = new Post({
@@ -71,6 +78,128 @@ export const createPost = async (req, res) => {
     });
 
     await newPost.save();
+
+    const postsCount = await Post.countDocuments({
+      userId,
+      $or: [{ privacy: "public" }, { privacy: "friends" }],
+    });
+
+    const isBadge = await Badge.findOne({ type: "post", userId });
+
+    if (postsCount === 1 || !isBadge) {
+      const badge = new Badge({
+        name: "Keyboard Rookie",
+        description: "User has created his first post",
+        icon: "📝",
+        userId,
+        level: "bronze",
+        type: "post",
+        criteria: "User must share his first post",
+      });
+
+      await badge.save();
+
+      const notification = new Notification({
+        receiverId: userId,
+        type: "badge",
+        linkId: `/profile/${userId}`,
+        description: "You have earned a new badge - Keyboard Rookie",
+      });
+
+      await notification.save();
+    } else if (postsCount === 10) {
+      await Badge.findOneAndUpdate(
+        { type: "post", userId },
+        {
+          name: "Chatterbox",
+          description: "User has created 10 posts",
+          level: "silver",
+          criteria: "User must share 10 posts",
+          userId,
+          type: "post",
+          icon: "📢",
+        },
+        { upsert: true }
+      );
+
+      const notification = new Notification({
+        receiverId: userId,
+        type: "badge",
+        linkId: `/profile/${userId}`,
+        description: "You have earned a new badge - Chatterbox",
+      });
+
+      await notification.save();
+    } else if (postsCount === 50) {
+      await Badge.findOneAndUpdate(
+        { type: "post", userId },
+        {
+          name: "Serial Poster",
+          description: "User has created 50 posts",
+          level: "gold",
+          criteria: "User must share 50 posts",
+          userId,
+          type: "post",
+          icon: "📌",
+        },
+        { upsert: true }
+      );
+
+      const notification = new Notification({
+        receiverId: userId,
+        type: "badge",
+        linkId: `/profile/${userId}`,
+        description: "You have earned a new badge - Serial Poster",
+      });
+
+      await notification.save();
+    } else if (postsCount === 100) {
+      await Badge.findOneAndUpdate(
+        { type: "post", userId },
+        {
+          name: "Keyboard Warrior",
+          description: "User has created 100 posts",
+          level: "diamond",
+          criteria: "User must share 100 posts",
+          userId,
+          type: "post",
+          icon: "🔥",
+        },
+        { upsert: true }
+      );
+
+      const notification = new Notification({
+        receiverId: userId,
+        type: "badge",
+        linkId: `/profile/${userId}`,
+        description: "You have earned a new badge - Keyboard Warrior",
+      });
+
+      await notification.save();
+    } else if (postsCount === 500) {
+      await Badge.findOneAndUpdate(
+        { type: "post", userId },
+        {
+          name: "El mejor",
+          description: "User has created 500 posts",
+          level: "platinum",
+          criteria: "User must share 500 posts",
+          userId,
+          type: "post",
+          icon: "🌟",
+        },
+        { upsert: true }
+      );
+
+      const notification = new Notification({
+        receiverId: userId,
+        type: "badge",
+        linkId: `/profile/${userId}`,
+        description: "You have earned a new badge - El mejor posts del mundo",
+      });
+
+      await notification.save();
+    }
 
     res.status(201).json(newPost);
   } catch (err) {
